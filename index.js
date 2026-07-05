@@ -1,7 +1,14 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const { appendRow } = require('./sheets');
-const { ACCOUNTS, CATEGORIES, SUBCATEGORY_MAP, DEBTS, PLAN_502030 } = require('./categories');
+const {
+  ACCOUNTS,
+  CATEGORIES_CHIQIM,
+  CATEGORIES_KIRIM,
+  SUBCATEGORY_MAP,
+  DEBTS,
+  PLAN_502030
+} = require('./categories');
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ALLOWED_USER_ID = process.env.ALLOWED_USER_ID; // ixtiyoriy: faqat shu ID ishlata oladi
@@ -45,12 +52,23 @@ function pad(n) {
   return String(n).padStart(2, '0');
 }
 
+// Format: oy/kun/yil soat:daqiqa:soniya (masalan 7/4/2026 10:01:00)
 function formatNow() {
   const d = new Date();
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const year = d.getFullYear();
+  const hour = d.getHours();
+  const minute = pad(d.getMinutes());
+  const second = pad(d.getSeconds());
+  return `${month}/${day}/${year} ${hour}:${minute}:${second}`;
 }
 
-const DATE_REGEX = /^(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/;
+const DATE_REGEX = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
+
+function getCategoryList(type) {
+  return type === 'Kirim' ? CATEGORIES_KIRIM : CATEGORIES_CHIQIM;
+}
 
 function resetSession(chatId) {
   sessions[chatId] = { step: 'DATE', data: {} };
@@ -61,7 +79,7 @@ function resetSession(chatId) {
 function askDate(chatId) {
   bot.sendMessage(
     chatId,
-    '📅 Sana va vaqtni kiriting.\nFormat: KK.OO.YYYY SS:DD:SS\nMasalan: 04.07.2026 10:01:00',
+    '📅 Sana va vaqtni kiriting.\nFormat: oy/kun/yil soat:daqiqa:soniya\nMasalan: 7/4/2026 10:01:00',
     { reply_markup: { inline_keyboard: [[{ text: '🕐 Hozirgi vaqt', callback_data: 'date_now' }]] } }
   );
 }
@@ -79,7 +97,8 @@ function askAccount(chatId) {
 }
 
 function askCategory(chatId) {
-  bot.sendMessage(chatId, '📂 Kategoriyani tanlang:', listKeyboard(CATEGORIES, 'cat', 2, true));
+  const list = getCategoryList(sessions[chatId].data.type);
+  bot.sendMessage(chatId, '📂 Kategoriyani tanlang:', listKeyboard(list, 'cat', 2, true));
 }
 
 function askSubcategory(chatId) {
@@ -108,12 +127,6 @@ function askComment(chatId) {
   });
 }
 
-function askNumber(chatId) {
-  bot.sendMessage(chatId, '🔢 Qo‘shimcha raqam kiriting (masalan valyuta kursi), yoki o‘tkazib yuboring:', {
-    reply_markup: { inline_keyboard: [[{ text: '➖ O‘tkazib yuborish', callback_data: 'number_skip' }]] }
-  });
-}
-
 function askConfirm(chatId) {
   const d = sessions[chatId].data;
   const text = [
@@ -128,7 +141,7 @@ function askConfirm(chatId) {
     `🤝 Qarz: ${d.debt}`,
     `📊 50/30/20: ${d.plan}`,
     `📝 Izoh: ${d.comment || '-'}`,
-    `🔢 Raqam: ${d.number || '-'}`
+    `🔢 Raqam: (avtomatik, formula orqali hisoblanadi)`
   ].join('\n');
 
   bot.sendMessage(chatId, text, {
@@ -152,7 +165,7 @@ bot.onText(/\/cancel/, (msg) => {
   bot.sendMessage(chatId, '❌ Bekor qilindi. Qayta boshlash uchun /yangi yozing.');
 });
 
-// ---------- oddiy matn xabarlar (sana, miqdor, izoh, raqam) ----------
+// ---------- oddiy matn xabarlar (sana, miqdor, izoh) ----------
 
 bot.on('message', (msg) => {
   if (!msg.text || msg.text.startsWith('/')) return;
@@ -166,7 +179,7 @@ bot.on('message', (msg) => {
 
   if (session.step === 'DATE') {
     if (!DATE_REGEX.test(text)) {
-      return bot.sendMessage(chatId, '⚠️ Format noto‘g‘ri. Namuna: 04.07.2026 10:01:00');
+      return bot.sendMessage(chatId, '⚠️ Format noto‘g‘ri. Namuna: 7/4/2026 10:01:00');
     }
     session.data.date = text;
     session.step = 'TYPE';
@@ -185,16 +198,6 @@ bot.on('message', (msg) => {
 
   if (session.step === 'COMMENT') {
     session.data.comment = text;
-    session.step = 'NUMBER';
-    return askNumber(chatId);
-  }
-
-  if (session.step === 'NUMBER') {
-    const num = Number(text.replace(/\s/g, '').replace(',', '.'));
-    if (Number.isNaN(num)) {
-      return bot.sendMessage(chatId, '⚠️ Iltimos faqat raqam kiriting, yoki tugmani bosing.');
-    }
-    session.data.number = num;
     session.step = 'CONFIRM';
     return askConfirm(chatId);
   }
@@ -244,7 +247,8 @@ bot.on('callback_query', async (query) => {
       return askDebt(chatId);
     }
     const idx = Number(data.split('_')[1]);
-    session.data.category = CATEGORIES[idx];
+    const list = getCategoryList(session.data.type);
+    session.data.category = list[idx];
     return askSubcategory(chatId);
   }
 
@@ -289,13 +293,6 @@ bot.on('callback_query', async (query) => {
   // COMMENT skip
   if (data === 'comment_skip' && session.step === 'COMMENT') {
     session.data.comment = '';
-    session.step = 'NUMBER';
-    return askNumber(chatId);
-  }
-
-  // NUMBER skip
-  if (data === 'number_skip' && session.step === 'NUMBER') {
-    session.data.number = '';
     session.step = 'CONFIRM';
     return askConfirm(chatId);
   }
@@ -305,7 +302,7 @@ bot.on('callback_query', async (query) => {
     const d = session.data;
     const row = [
       d.date, d.type, d.amount, d.account, d.category,
-      d.subcategory, d.debt, d.plan, d.subscription, d.comment, d.number
+      d.subcategory, d.debt, d.plan, d.subscription, d.comment
     ];
     try {
       await appendRow(row);
