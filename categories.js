@@ -18,7 +18,7 @@ const CATEGORIES = {[
   '🙋Shaxsiy xarajatlar',
   '🪙Komissiya',
   '🔻Boshqa chiqim'],
-  'Kirim'['💵Maosh',
+  'Kirim':['💵Maosh',
   '📊Omonat',
   '💴 Divident',
   '🪙Keshbek',
