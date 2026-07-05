@@ -8,22 +8,27 @@ const ACCOUNTS = [
   'Paynet', 'UzCSD', 'Tengebank', 'Binance', 'Bitget'
 ];
 
-// F9 - Kategoriya
-const CATEGORIES = [
-  '🛻Transport',
-  '🥐Ovqatlanish',
-  '📱Telefon',
-  "🎓Ta'lim",
-  '🟡Istaklar',
-  '🙋Shaxsiy xarajatlar',
-  '🪙Komissiya',
-  '🔻Boshqa chiqim',
-  '💵Maosh',
-  '📊Omonat',
-  '💴 Divident',
-  '🪙Keshbek',
-  '🟢Boshqa kirim'
-];
+// F9 - Kategoriya, Kirim/chiqim turiga qarab guruhlangan.
+// "Chiqim" ro'yxati 🔻Boshqa chiqim bilan tugaydi, undan keyingilari "Kirim" hisoblanadi.
+const CATEGORIES = {
+  Chiqim: [
+    '🛻Transport',
+    '🥐Ovqatlanish',
+    '📱Telefon',
+    "🎓Ta'lim",
+    '🟡Istaklar',
+    '🙋Shaxsiy xarajatlar',
+    '🪙Komissiya',
+    '🔻Boshqa chiqim'
+  ],
+  Kirim: [
+    '💵Maosh',
+    '📊Omonat',
+    '💴 Divident',
+    '🪙Keshbek',
+    '🟢Boshqa kirim'
+  ]
+};
 
 // G9 - Sub-kategoriya, F9 (Kategoriya) ga bog'liq.
 // DIQQAT: bu moslashuvni men mantiqan taxmin qilib taqsimladim.
@@ -34,16 +39,18 @@ const SUBCATEGORY_MAP = {
   '🥐Ovqatlanish': ['🍳Nonushta', '🍖Tushlik', '🍜Kechlik'],
   '📱Telefon': ['📱Galaxy A03', '📱Redmi 13C', '📱iPhone 11 pro'],
   "🎓Ta'lim": ['📖Kitob', '✒️O‘quv qurollari', '📃Kontrakt'],
-  '🟡Istaklar': ['🧑‍🤝‍🧑Do‘stlar davrasi',  '🎊Bayramlar', '🫀Qalbim'],
-  '🙋Shaxsiy xarajatlar': ['🥸Shaxsiy xarajat','✂️Tashqi ko‘rinish'],
-  '🪙Komissiya': ['🪙Komissiya'],
-  '🔻Boshqa chiqim': ['🔻Boshqa chiqim'],
+  '🟡Istaklar': ['🧑‍🤝‍🧑Do‘stlar davrasi', '✂️Tashqi ko‘rinish', '🎊Bayramlar'],
+  '🙋Shaxsiy xarajatlar': ['🥸Shaxsiy xarajat', '🫀Qalbim'],
+  '🪙Komissiya': [],
+  '🔻Boshqa chiqim': [],
   '💵Maosh': ['🧑‍⚖️F.T.Kadirov', '🧑‍⚖️L.Haydarov', '👩🏻‍⚖️D.S.Maqsudova', '💲Boshqa ish haqi'],
-  '📊Omonat': ['🌳Siz uchun', '🌳Intellekt', '🌳Qulay online', '🌳Online-standart', '🌳Jamg‘armali'
+  '📊Omonat': [
+    '🟦 UzCSD', '🟢Paynet', '💎Zoomrad', '💎Uzumbank',
+    '🌳Siz uchun', '🌳Intellekt', '🌳Qulay online', '🌳Online-standart', '🌳Jamg‘armali'
   ],
-  '💴 Divident': ['🟦 UzCSD'],
-  '🪙Keshbek': ['🟢Paynet', '💎Zoomrad', '💎Uzumbank'],
-  '🟢Boshqa kirim': ['🟢Boshqa kirim']
+  '💴 Divident': [],
+  '🪙Keshbek': [],
+  '🟢Boshqa kirim': []
 };
 
 // H9 - Qarz
