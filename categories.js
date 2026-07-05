@@ -36,16 +36,14 @@ const SUBCATEGORY_MAP = {
   "🎓Ta'lim": ['📖Kitob', '✒️O‘quv qurollari', '📃Kontrakt'],
   '🟡Istaklar': ['🧑‍🤝‍🧑Do‘stlar davrasi',  '🎊Bayramlar', '🫀Qalbim'],
   '🙋Shaxsiy xarajatlar': ['🥸Shaxsiy xarajat','✂️Tashqi ko‘rinish'],
-  '🪙Komissiya': [🪙Komissiya],
-  '🔻Boshqa chiqim': [🔻Boshqa chiqim],
+  '🪙Komissiya': ['🪙Komissiya'],
+  '🔻Boshqa chiqim': ['🔻Boshqa chiqim'],
   '💵Maosh': ['🧑‍⚖️F.T.Kadirov', '🧑‍⚖️L.Haydarov', '👩🏻‍⚖️D.S.Maqsudova', '💲Boshqa ish haqi'],
-  '📊Omonat': [
-     
-    '🌳Siz uchun', '🌳Intellekt', '🌳Qulay online', '🌳Online-standart', '🌳Jamg‘armali'
+  '📊Omonat': ['🌳Siz uchun', '🌳Intellekt', '🌳Qulay online', '🌳Online-standart', '🌳Jamg‘armali'
   ],
   '💴 Divident': ['🟦 UzCSD'],
   '🪙Keshbek': ['🟢Paynet', '💎Zoomrad', '💎Uzumbank'],
-  '🟢Boshqa kirim': [🟢Boshqa kirim]
+  '🟢Boshqa kirim': ['🟢Boshqa kirim']
 };
 
 // H9 - Qarz
