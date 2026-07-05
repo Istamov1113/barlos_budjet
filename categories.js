@@ -9,21 +9,20 @@ const ACCOUNTS = [
 ];
 
 // F9 - Kategoriya
-const CATEGORIES = {[
-  'Chiqim': ['🛻Transport',
+const CATEGORIES = ['🛻Transport',
   '🥐Ovqatlanish',
   '📱Telefon',
   "🎓Ta'lim",
   '🟡Istaklar',
   '🙋Shaxsiy xarajatlar',
   '🪙Komissiya',
-  '🔻Boshqa chiqim'],
-  'Kirim':['💵Maosh',
+  '🔻Boshqa chiqim',
+'💵Maosh',
   '📊Omonat',
   '💴 Divident',
   '🪙Keshbek',
   '🟢Boshqa kirim'
-]};
+};
 
 // G9 - Sub-kategoriya, F9 (Kategoriya) ga bog'liq.
 // DIQQAT: bu moslashuvni men mantiqan taxmin qilib taqsimladim.
