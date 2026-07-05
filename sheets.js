@@ -16,6 +16,19 @@ function getAuth() {
   ]);
 }
 
+// Ustun A dagi band qatorlar sonini hisoblab, jadvaldagi keyingi bo'sh qator raqamini topadi.
+// Google Sheets API'ning avtomatik "append" funksiyasi ba'zan bo'sh kataklar borligida
+// jadval chegarasini noto'g'ri aniqlab, ma'lumotni noto'g'ri ustundan boshlab yozib yuborishi
+// mumkin edi - shu sababli bu yerda qator raqamini o'zimiz aniq hisoblaymiz.
+async function getNextRow(sheets, spreadsheetId, sheetName) {
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!A:A`
+  });
+  const rowCount = res.data.values ? res.data.values.length : 0;
+  return rowCount + 1;
+}
+
 // values - 11 ta elementli massiv: [Sana, Kirim/chiqim, Miqdor, Hisob,
 // Kategoriya, Sub-kategoriya, Qarz, 50/30/20, Obuna, Izoh, raqam]
 async function appendRow(values) {
@@ -29,11 +42,12 @@ async function appendRow(values) {
     throw new Error('SPREADSHEET_ID .env da topilmadi');
   }
 
-  await sheets.spreadsheets.values.append({
+  const nextRow = await getNextRow(sheets, spreadsheetId, sheetName);
+
+  await sheets.spreadsheets.values.update({
     spreadsheetId,
-    range: `${sheetName}!A:K`,
+    range: `${sheetName}!A${nextRow}:K${nextRow}`,
     valueInputOption: 'USER_ENTERED',
-    insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [values] }
   });
 }
