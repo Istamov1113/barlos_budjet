@@ -17,7 +17,7 @@ console.log('Bot ishga tushdi...');
 // chatId -> { step, data: {} }
 const sessions = {};
 
-const CANCEL_ROW = [{ text: '❌ Bekor qilish', callback_data: 'cancel' }];
+const NONE_LABEL = '➖ Yo‘q';
 
 // ---------- yordamchi funksiyalar ----------
 
@@ -32,10 +32,13 @@ function chunk(arr, size) {
   return rows;
 }
 
-function listKeyboard(list, prefix, columns, extraRows = []) {
+// list - variantlar ro'yxati, prefix - callback_data prefiksi, columns - qatordagi tugmalar soni
+// withNone - true bo'lsa, oxiriga "➖ Yo'q" tugmasi qo'shiladi (callback_data: `${prefix}_none`)
+function listKeyboard(list, prefix, columns, withNone = false) {
   const buttons = list.map((item, idx) => ({ text: item, callback_data: `${prefix}_${idx}` }));
   const rows = chunk(buttons, columns);
-  return { reply_markup: { inline_keyboard: [...rows, ...extraRows, CANCEL_ROW] } };
+  if (withNone) rows.push([{ text: NONE_LABEL, callback_data: `${prefix}_none` }]);
+  return { reply_markup: { inline_keyboard: rows } };
 }
 
 function pad(n) {
@@ -59,7 +62,7 @@ function askDate(chatId) {
   bot.sendMessage(
     chatId,
     '📅 Sana va vaqtni kiriting.\nFormat: KK.OO.YYYY SS:DD:SS\nMasalan: 04.07.2026 10:01:00',
-    { reply_markup: { inline_keyboard: [[{ text: '🕐 Hozirgi vaqt', callback_data: 'date_now' }], CANCEL_ROW] } }
+    { reply_markup: { inline_keyboard: [[{ text: '🕐 Hozirgi vaqt', callback_data: 'date_now' }]] } }
   );
 }
 
@@ -68,9 +71,7 @@ function askType(chatId) {
 }
 
 function askAmount(chatId) {
-  bot.sendMessage(chatId, '🔢 Miqdorni kiriting (faqat raqam), masalan: 20000', {
-    reply_markup: { inline_keyboard: [CANCEL_ROW] }
-  });
+  bot.sendMessage(chatId, '🔢 Miqdorni kiriting (faqat raqam), masalan: 20000');
 }
 
 function askAccount(chatId) {
@@ -78,38 +79,38 @@ function askAccount(chatId) {
 }
 
 function askCategory(chatId) {
-  bot.sendMessage(chatId, '📂 Kategoriyani tanlang:', listKeyboard(CATEGORIES, 'cat', 2));
+  bot.sendMessage(chatId, '📂 Kategoriyani tanlang:', listKeyboard(CATEGORIES, 'cat', 2, true));
 }
 
 function askSubcategory(chatId) {
   const session = sessions[chatId];
   const list = SUBCATEGORY_MAP[session.data.category] || [];
+  session.step = 'SUBCATEGORY';
   if (list.length === 0) {
     session.data.subcategory = '-';
     session.step = 'DEBT';
     return askDebt(chatId);
   }
-  session.step = 'SUBCATEGORY';
-  bot.sendMessage(chatId, '🏷 Sub-kategoriyani tanlang:', listKeyboard(list, 'sub', 1));
+  bot.sendMessage(chatId, '🏷 Sub-kategoriyani tanlang:', listKeyboard(list, 'sub', 1, true));
 }
 
 function askDebt(chatId) {
-  bot.sendMessage(chatId, '🤝 Qarzga aloqadormi?', listKeyboard(DEBTS, 'debt', 2, [[{ text: '➖ Yo‘q', callback_data: 'debt_none' }]]));
+  bot.sendMessage(chatId, '🤝 Qarzga aloqadormi?', listKeyboard(DEBTS, 'debt', 2, true));
 }
 
 function askPlan(chatId) {
-  bot.sendMessage(chatId, '📊 50/30/20 bo‘yicha qaysi guruhga tegishli?', listKeyboard(PLAN_502030, 'plan', 2));
+  bot.sendMessage(chatId, '📊 50/30/20 bo‘yicha qaysi guruhga tegishli?', listKeyboard(PLAN_502030, 'plan', 2, true));
 }
 
 function askComment(chatId) {
   bot.sendMessage(chatId, '📝 Izoh yozing (yoki o‘tkazib yuboring):', {
-    reply_markup: { inline_keyboard: [[{ text: '➖ O‘tkazib yuborish', callback_data: 'comment_skip' }], CANCEL_ROW] }
+    reply_markup: { inline_keyboard: [[{ text: '➖ O‘tkazib yuborish', callback_data: 'comment_skip' }]] }
   });
 }
 
 function askNumber(chatId) {
   bot.sendMessage(chatId, '🔢 Qo‘shimcha raqam kiriting (masalan valyuta kursi), yoki o‘tkazib yuboring:', {
-    reply_markup: { inline_keyboard: [[{ text: '➖ O‘tkazib yuborish', callback_data: 'number_skip' }], CANCEL_ROW] }
+    reply_markup: { inline_keyboard: [[{ text: '➖ O‘tkazib yuborish', callback_data: 'number_skip' }]] }
   });
 }
 
@@ -131,11 +132,7 @@ function askConfirm(chatId) {
   ].join('\n');
 
   bot.sendMessage(chatId, text, {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: '✅ Saqlash', callback_data: 'confirm_yes' }, { text: '❌ Bekor qilish', callback_data: 'cancel' }]
-      ]
-    }
+    reply_markup: { inline_keyboard: [[{ text: '✅ Saqlash', callback_data: 'confirm_yes' }]] }
   });
 }
 
@@ -212,11 +209,6 @@ bot.on('callback_query', async (query) => {
 
   if (!isAllowed(query.from.id)) return;
 
-  if (data === 'cancel') {
-    delete sessions[chatId];
-    return bot.sendMessage(chatId, '❌ Bekor qilindi. Qayta boshlash uchun /yangi yozing.');
-  }
-
   const session = sessions[chatId];
   if (!session) return;
 
@@ -228,7 +220,7 @@ bot.on('callback_query', async (query) => {
   }
 
   // TYPE
-  if (data.startsWith('type_') && session.step === 'TYPE') {
+  if (session.step === 'TYPE' && data.startsWith('type_')) {
     const idx = Number(data.split('_')[1]);
     session.data.type = ['Kirim', 'Chiqim'][idx];
     session.step = 'AMOUNT';
@@ -236,7 +228,7 @@ bot.on('callback_query', async (query) => {
   }
 
   // ACCOUNT
-  if (data.startsWith('acc_') && session.step === 'ACCOUNT') {
+  if (session.step === 'ACCOUNT' && data.startsWith('acc_')) {
     const idx = Number(data.split('_')[1]);
     session.data.account = ACCOUNTS[idx];
     session.step = 'CATEGORY';
@@ -244,23 +236,33 @@ bot.on('callback_query', async (query) => {
   }
 
   // CATEGORY
-  if (data.startsWith('cat_') && session.step === 'CATEGORY') {
+  if (session.step === 'CATEGORY' && data.startsWith('cat_')) {
+    if (data === 'cat_none') {
+      session.data.category = '-';
+      session.data.subcategory = '-';
+      session.step = 'DEBT';
+      return askDebt(chatId);
+    }
     const idx = Number(data.split('_')[1]);
     session.data.category = CATEGORIES[idx];
     return askSubcategory(chatId);
   }
 
   // SUBCATEGORY
-  if (data.startsWith('sub_') && session.step === 'SUBCATEGORY') {
-    const idx = Number(data.split('_')[1]);
-    const list = SUBCATEGORY_MAP[session.data.category] || [];
-    session.data.subcategory = list[idx];
+  if (session.step === 'SUBCATEGORY' && data.startsWith('sub_')) {
+    if (data === 'sub_none') {
+      session.data.subcategory = '-';
+    } else {
+      const idx = Number(data.split('_')[1]);
+      const list = SUBCATEGORY_MAP[session.data.category] || [];
+      session.data.subcategory = list[idx];
+    }
     session.step = 'DEBT';
     return askDebt(chatId);
   }
 
   // DEBT
-  if (session.step === 'DEBT' && (data.startsWith('debt_'))) {
+  if (session.step === 'DEBT' && data.startsWith('debt_')) {
     if (data === 'debt_none') {
       session.data.debt = '-';
     } else {
@@ -272,9 +274,13 @@ bot.on('callback_query', async (query) => {
   }
 
   // PLAN (50/30/20)
-  if (data.startsWith('plan_') && session.step === 'PLAN') {
-    const idx = Number(data.split('_')[1]);
-    session.data.plan = PLAN_502030[idx];
+  if (session.step === 'PLAN' && data.startsWith('plan_')) {
+    if (data === 'plan_none') {
+      session.data.plan = '-';
+    } else {
+      const idx = Number(data.split('_')[1]);
+      session.data.plan = PLAN_502030[idx];
+    }
     session.data.subscription = ''; // J9 - Obuna, hozircha bo'sh
     session.step = 'COMMENT';
     return askComment(chatId);
