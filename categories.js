@@ -34,18 +34,16 @@ const SUBCATEGORY_MAP = {
   '🥐Ovqatlanish': ['🍳Nonushta', '🍖Tushlik', '🍜Kechlik'],
   '📱Telefon': ['📱Galaxy A03', '📱Redmi 13C', '📱iPhone 11 pro'],
   "🎓Ta'lim": ['📖Kitob', '✒️O‘quv qurollari', '📃Kontrakt'],
-  '🟡Istaklar': ['🧑‍🤝‍🧑Do‘stlar davrasi', '✂️Tashqi ko‘rinish', '🎊Bayramlar'],
-  '🙋Shaxsiy xarajatlar': ['🥸Shaxsiy xarajat', '🫀Qalbim'],
-  '🪙Komissiya': [],
-  '🔻Boshqa chiqim': [],
+  '🟡Istaklar': ['🧑‍🤝‍🧑Do‘stlar davrasi', '🎊Bayramlar', '🫀Qalbim'],
+  '🙋Shaxsiy xarajatlar': ['🥸Shaxsiy xarajat','✂️Tashqi ko‘rinish' ],
+  '🪙Komissiya': ['🪙Komissiya'],
+  '🔻Boshqa chiqim': ['🔻Boshqa chiqim'],
   '💵Maosh': ['🧑‍⚖️F.T.Kadirov', '🧑‍⚖️L.Haydarov', '👩🏻‍⚖️D.S.Maqsudova', '💲Boshqa ish haqi'],
-  '📊Omonat': [
-    '🟦 UzCSD', '🟢Paynet', '💎Zoomrad', '💎Uzumbank',
-    '🌳Siz uchun', '🌳Intellekt', '🌳Qulay online', '🌳Online-standart', '🌳Jamg‘armali'
+  '📊Omonat': ['🌳Siz uchun', '🌳Intellekt', '🌳Qulay online', '🌳Online-standart', '🌳Jamg‘armali'
   ],
-  '💴 Divident': [],
-  '🪙Keshbek': [],
-  '🟢Boshqa kirim': []
+  '💴 Divident': ['🟦 UzCSD'],
+  '🪙Keshbek': ['🟢Paynet', '💎Zoomrad', '💎Uzumbank'],
+  '🟢Boshqa kirim': ['🟢Boshqa kirim']
 };
 
 // H9 - Qarz
