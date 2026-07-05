@@ -9,7 +9,8 @@ const ACCOUNTS = [
 ];
 
 // F9 - Kategoriya
-const CATEGORIES = ['🛻Transport',
+const CATEGORIES = [
+  '🛻Transport',
   '🥐Ovqatlanish',
   '📱Telefon',
   "🎓Ta'lim",
@@ -17,12 +18,12 @@ const CATEGORIES = ['🛻Transport',
   '🙋Shaxsiy xarajatlar',
   '🪙Komissiya',
   '🔻Boshqa chiqim',
-'💵Maosh',
+  '💵Maosh',
   '📊Omonat',
   '💴 Divident',
   '🪙Keshbek',
   '🟢Boshqa kirim'
-};
+];
 
 // G9 - Sub-kategoriya, F9 (Kategoriya) ga bog'liq.
 // DIQQAT: bu moslashuvni men mantiqan taxmin qilib taqsimladim.
@@ -33,16 +34,18 @@ const SUBCATEGORY_MAP = {
   '🥐Ovqatlanish': ['🍳Nonushta', '🍖Tushlik', '🍜Kechlik'],
   '📱Telefon': ['📱Galaxy A03', '📱Redmi 13C', '📱iPhone 11 pro'],
   "🎓Ta'lim": ['📖Kitob', '✒️O‘quv qurollari', '📃Kontrakt'],
-  '🟡Istaklar': ['🧑‍🤝‍🧑Do‘stlar davrasi', '🎊Bayramlar', '🫀Qalbim'],
-  '🙋Shaxsiy xarajatlar': ['🥸Shaxsiy xarajat','✂️Tashqi ko‘rinish' ],
-  '🪙Komissiya': ['🪙Komissiya'],
-  '🔻Boshqa chiqim': ['🔻Boshqa chiqim'],
+  '🟡Istaklar': ['🧑‍🤝‍🧑Do‘stlar davrasi',  '🎊Bayramlar', '🫀Qalbim'],
+  '🙋Shaxsiy xarajatlar': ['🥸Shaxsiy xarajat','✂️Tashqi ko‘rinish'],
+  '🪙Komissiya': [🪙Komissiya],
+  '🔻Boshqa chiqim': [🔻Boshqa chiqim],
   '💵Maosh': ['🧑‍⚖️F.T.Kadirov', '🧑‍⚖️L.Haydarov', '👩🏻‍⚖️D.S.Maqsudova', '💲Boshqa ish haqi'],
-  '📊Omonat': ['🌳Siz uchun', '🌳Intellekt', '🌳Qulay online', '🌳Online-standart', '🌳Jamg‘armali'
+  '📊Omonat': [
+     
+    '🌳Siz uchun', '🌳Intellekt', '🌳Qulay online', '🌳Online-standart', '🌳Jamg‘armali'
   ],
   '💴 Divident': ['🟦 UzCSD'],
   '🪙Keshbek': ['🟢Paynet', '💎Zoomrad', '💎Uzumbank'],
-  '🟢Boshqa kirim': ['🟢Boshqa kirim']
+  '🟢Boshqa kirim': [🟢Boshqa kirim]
 };
 
 // H9 - Qarz
