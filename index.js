@@ -1,7 +1,7 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const { appendRow } = require('./sheets');
-const { getDashboardGrid, cell } = require('./dashboard');
+const { getDashboardGrid, cell, setPortfolioSelector } = require('./dashboard');
 const { ACCOUNTS, CATEGORIES, SUBCATEGORY_MAP, DEBTS, PLAN_502030 } = require('./categories');
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -20,7 +20,7 @@ bot.setMyCommands([
   { command: 'yangi', description: 'Yangi tranzaksiya kiritish' },
   { command: 'balans', description: 'Umumiy balans va oylik o‘zgarish' },
   { command: 'hisoblar', description: 'Har bir hisobning joriy qoldig‘i' },
-  { command: 'aktivlar', description: 'Har bir hisobdagi aktiv tafsiloti' },
+  { command: 'aktivlar', description: 'Tanlangan birjadagi aktivlar (portfel)' },
   { command: 'qarzlar', description: 'Qarz daftari' },
   { command: 'budjet', description: '50/30/20 taqsimoti' },
   { command: 'cancel', description: 'Joriy jarayonni bekor qilish' }
@@ -37,6 +37,17 @@ function fmtPercent(n) {
   if (n === null || n === undefined || Number.isNaN(Number(n))) return '-';
   return `${(Number(n) * 100).toFixed(2)}%`;
 }
+
+// P11 (birja) tanlanganda R11 (valyuta) shu moslashuv bo'yicha avtomatik yoziladi —
+// bu sizning IFS formulangizga aynan mos (Uznex/Multicard->UZS, Binance/Bitget->USD, Payeer->RUB)
+const PORTFOLIO_CURRENCY = {
+  Uznex: 'UZS',
+  Multicard: 'UZS',
+  Binance: 'USD',
+  Bitget: 'USD',
+  Payeer: 'RUB'
+};
+const PORTFOLIO_EXCHANGES = Object.keys(PORTFOLIO_CURRENCY);
 
 // chatId -> { step, data: {} }
 const sessions = {};
@@ -226,30 +237,13 @@ bot.onText(/\/hisoblar/, async (msg) => {
   }
 });
 
-bot.onText(/\/aktivlar/, async (msg) => {
+bot.onText(/\/aktivlar/, (msg) => {
   const chatId = msg.chat.id;
   if (!isAllowed(msg.from.id)) return;
-  try {
-    const grid = await getDashboardGrid();
-    const lines = ['📉 Har bir hisobdagi aktiv tafsiloti', ''];
-    for (let row = 13; row <= 26; row++) {
-      const account = cell(grid, 'B', row);
-      const asset = cell(grid, 'P', row);
-      if (!account || !asset) continue;
-      const price = cell(grid, 'S', row);
-      const avgPrice = cell(grid, 'T', row);
-      const pnl = cell(grid, 'U', row);
-      const pnlPct = cell(grid, 'V', row);
-      const ratio = cell(grid, 'W', row);
-      lines.push(`• ${account} → ${asset}`);
-      lines.push(`   Narx: ${fmtNum(price)} | O‘rt: ${fmtNum(avgPrice)}`);
-      lines.push(`   PNL: ${fmtNum(pnl)} so'm (${fmtPercent(pnlPct)}) | Ratio: ${fmtNum(ratio, 3)}`);
-    }
-    bot.sendMessage(chatId, lines.join('\n'));
-  } catch (err) {
-    console.error(err);
-    bot.sendMessage(chatId, '⚠️ Ma’lumotni olishda xatolik yuz berdi.');
-  }
+  const buttons = PORTFOLIO_EXCHANGES.map((name) => [{ text: name, callback_data: `pf_${name}` }]);
+  bot.sendMessage(chatId, '💼 Qaysi birjadagi aktivlarni ko‘rmoqchisiz?', {
+    reply_markup: { inline_keyboard: buttons }
+  });
 });
 
 bot.onText(/\/qarzlar/, async (msg) => {
@@ -342,6 +336,54 @@ bot.on('callback_query', async (query) => {
   bot.answerCallbackQuery(query.id).catch(() => {});
 
   if (!isAllowed(query.from.id)) return;
+
+  // Portfel/aktivlar tanlovi — tranzaksiya sessiyasidan mustaqil ishlaydi
+  if (data.startsWith('pf_')) {
+    const exchange = data.slice(3);
+    const currency = PORTFOLIO_CURRENCY[exchange];
+    if (!currency) return;
+    try {
+      bot.sendMessage(chatId, `⏳ ${exchange} (${currency}) tekshirilmoqda...`);
+      await setPortfolioSelector(exchange, currency);
+      await new Promise((resolve) => setTimeout(resolve, 1200)); // formula qayta hisoblanishi uchun
+      const grid = await getDashboardGrid();
+
+      const count = cell(grid, 'S', 11);
+      const totalValue = cell(grid, 'T', 11);
+      const totalPnl = cell(grid, 'U', 11);
+      const totalPnlPct = cell(grid, 'V', 11);
+
+      const lines = [
+        `📉 ${exchange} portfeli (${currency})`,
+        '',
+        `Jami aktivlar: ${fmtNum(count, 0)} ta | Qiymati: ${fmtNum(totalValue)} ${currency}`,
+        `Umumiy PNL: ${fmtNum(totalPnl)} ${currency} (${fmtPercent(totalPnlPct)})`,
+        ''
+      ];
+
+      for (let row = 13; row <= 30; row++) {
+        const asset = cell(grid, 'P', row);
+        if (!asset) continue;
+        const hajm = cell(grid, 'Q', row);
+        const price = cell(grid, 'S', row);
+        const avgPrice = cell(grid, 'T', row);
+        const pnl = cell(grid, 'U', row);
+        const pnlPct = cell(grid, 'V', row);
+        const ratio = cell(grid, 'W', row);
+        lines.push(`• ${asset} — Hajm: ${fmtNum(hajm)}`);
+        lines.push(`   Narx: ${fmtNum(price)} | O‘rt: ${fmtNum(avgPrice)}`);
+        lines.push(`   PNL: ${fmtNum(pnl)} ${currency} (${fmtPercent(pnlPct)}) | Ratio: ${fmtNum(ratio, 3)}`);
+      }
+
+      if (lines.length === 5) lines.push('Bu birjada hozircha aktiv topilmadi.');
+
+      bot.sendMessage(chatId, lines.join('\n'));
+    } catch (err) {
+      console.error(err);
+      bot.sendMessage(chatId, '⚠️ Ma’lumotni olishda xatolik yuz berdi.');
+    }
+    return;
+  }
 
   const session = sessions[chatId];
   if (!session) return;
