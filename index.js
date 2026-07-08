@@ -1,6 +1,7 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const { appendRow } = require('./sheets');
+const { getDashboardGrid, cell } = require('./dashboard');
 const { ACCOUNTS, CATEGORIES, SUBCATEGORY_MAP, DEBTS, PLAN_502030 } = require('./categories');
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -13,6 +14,29 @@ if (!TOKEN) {
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 console.log('Bot ishga tushdi...');
+
+// Telegram'ning "/" tugmasi ostidagi rasmiy komandalar menyusi
+bot.setMyCommands([
+  { command: 'yangi', description: 'Yangi tranzaksiya kiritish' },
+  { command: 'balans', description: 'Umumiy balans va oylik o‘zgarish' },
+  { command: 'hisoblar', description: 'Har bir hisobning joriy qoldig‘i' },
+  { command: 'aktivlar', description: 'Har bir hisobdagi aktiv tafsiloti' },
+  { command: 'qarzlar', description: 'Qarz daftari' },
+  { command: 'budjet', description: '50/30/20 taqsimoti' },
+  { command: 'cancel', description: 'Joriy jarayonni bekor qilish' }
+]).catch((err) => console.error('Komandalar menyusini o‘rnatishda xato:', err.message));
+
+// ---------- sonlarni formatlash ----------
+
+function fmtNum(n, decimals = 2) {
+  if (n === null || n === undefined || Number.isNaN(Number(n))) return '-';
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: decimals });
+}
+
+function fmtPercent(n) {
+  if (n === null || n === undefined || Number.isNaN(Number(n))) return '-';
+  return `${(Number(n) * 100).toFixed(2)}%`;
+}
 
 // chatId -> { step, data: {} }
 const sessions = {};
@@ -151,6 +175,125 @@ bot.onText(/\/cancel/, (msg) => {
   const chatId = msg.chat.id;
   delete sessions[chatId];
   bot.sendMessage(chatId, '❌ Bekor qilindi. Qayta boshlash uchun /yangi yozing.');
+});
+
+// ---------- Dashboard'ni o'qiydigan komandalar (faqat o'qish, hech narsa yozmaydi) ----------
+
+bot.onText(/\/balans/, async (msg) => {
+  const chatId = msg.chat.id;
+  if (!isAllowed(msg.from.id)) return;
+  try {
+    const grid = await getDashboardGrid();
+    const total = cell(grid, 'C', 2);
+    const changePct = cell(grid, 'C', 5);
+    const changeAmt = cell(grid, 'E', 5);
+    const emoji = Number(changePct) >= 0 ? '🟢' : '🔴';
+    const text = [
+      '💰 Umumiy balans',
+      '',
+      `💵 Jami summa: ${fmtNum(total)} so'm`,
+      `${emoji} Oylik o‘zgarish: ${fmtPercent(changePct)} (${fmtNum(changeAmt)} so'm)`
+    ].join('\n');
+    bot.sendMessage(chatId, text);
+  } catch (err) {
+    console.error(err);
+    bot.sendMessage(chatId, '⚠️ Ma’lumotni olishda xatolik yuz berdi.');
+  }
+});
+
+bot.onText(/\/hisoblar/, async (msg) => {
+  const chatId = msg.chat.id;
+  if (!isAllowed(msg.from.id)) return;
+  try {
+    const grid = await getDashboardGrid();
+    const lines = ['🏦 Hisoblar ro‘yxati', ''];
+    for (let row = 13; row <= 27; row++) {
+      const name = cell(grid, 'B', row);
+      if (!name) continue;
+      const amount = cell(grid, 'C', row);
+      const currency = cell(grid, 'D', row);
+      const uzs = cell(grid, 'E', row);
+      if (currency === 'UZS') {
+        lines.push(`• ${name}: ${fmtNum(amount)} so'm`);
+      } else {
+        lines.push(`• ${name}: ${fmtNum(amount)} ${currency} (~${fmtNum(uzs)} so'm)`);
+      }
+    }
+    bot.sendMessage(chatId, lines.join('\n'));
+  } catch (err) {
+    console.error(err);
+    bot.sendMessage(chatId, '⚠️ Ma’lumotni olishda xatolik yuz berdi.');
+  }
+});
+
+bot.onText(/\/aktivlar/, async (msg) => {
+  const chatId = msg.chat.id;
+  if (!isAllowed(msg.from.id)) return;
+  try {
+    const grid = await getDashboardGrid();
+    const lines = ['📉 Har bir hisobdagi aktiv tafsiloti', ''];
+    for (let row = 13; row <= 26; row++) {
+      const account = cell(grid, 'B', row);
+      const asset = cell(grid, 'P', row);
+      if (!account || !asset) continue;
+      const price = cell(grid, 'S', row);
+      const avgPrice = cell(grid, 'T', row);
+      const pnl = cell(grid, 'U', row);
+      const pnlPct = cell(grid, 'V', row);
+      const ratio = cell(grid, 'W', row);
+      lines.push(`• ${account} → ${asset}`);
+      lines.push(`   Narx: ${fmtNum(price)} | O‘rt: ${fmtNum(avgPrice)}`);
+      lines.push(`   PNL: ${fmtNum(pnl)} so'm (${fmtPercent(pnlPct)}) | Ratio: ${fmtNum(ratio, 3)}`);
+    }
+    bot.sendMessage(chatId, lines.join('\n'));
+  } catch (err) {
+    console.error(err);
+    bot.sendMessage(chatId, '⚠️ Ma’lumotni olishda xatolik yuz berdi.');
+  }
+});
+
+bot.onText(/\/qarzlar/, async (msg) => {
+  const chatId = msg.chat.id;
+  if (!isAllowed(msg.from.id)) return;
+  try {
+    const grid = await getDashboardGrid();
+    const lines = ['🤝 Qarz daftari', ''];
+    for (let row = 36; row <= 45; row++) {
+      const name = cell(grid, 'B', row);
+      if (!name) continue;
+      const amount = cell(grid, 'C', row);
+      lines.push(`• ${name}: ${fmtNum(amount)} so'm`);
+    }
+    const total = cell(grid, 'C', 49);
+    lines.push('', `Jami: ${fmtNum(total)} so'm`);
+    bot.sendMessage(chatId, lines.join('\n'));
+  } catch (err) {
+    console.error(err);
+    bot.sendMessage(chatId, '⚠️ Ma’lumotni olishda xatolik yuz berdi.');
+  }
+});
+
+bot.onText(/\/budjet/, async (msg) => {
+  const chatId = msg.chat.id;
+  if (!isAllowed(msg.from.id)) return;
+  try {
+    const grid = await getDashboardGrid();
+    const lines = ['📊 50/30/20 holati', ''];
+    for (let row = 36; row <= 38; row++) {
+      const label = cell(grid, 'E', row);
+      if (!label) continue;
+      const amount = cell(grid, 'F', row);
+      const ratio = cell(grid, 'G', row);
+      lines.push(`• ${label}: ${fmtNum(amount)} so'm (Ratio: ${fmtNum(ratio, 3)})`);
+    }
+    const incomeLabel = cell(grid, 'E', 40);
+    const incomeAmount = cell(grid, 'F', 40);
+    if (incomeLabel) lines.push(`• ${incomeLabel}: ${fmtNum(incomeAmount)} so'm`);
+    bot.sendMessage(chatId, lines.join('\n'));
+  } catch (err) {
+    console.error(err);
+    bot.sendMessage(chatId, '⚠️ Ma’lumotni olishda xatolik yuz berdi.');
+  }
 });
 
 // ---------- oddiy matn xabarlar (sana, miqdor, izoh) ----------
