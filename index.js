@@ -118,7 +118,7 @@ function askSubcategory(chatId) {
   const list = SUBCATEGORY_MAP[session.data.category] || [];
   session.step = 'SUBCATEGORY';
   if (list.length === 0) {
-    session.data.subcategory = '-';
+    session.data.subcategory = '';
     session.step = 'DEBT';
     return askDebt(chatId);
   }
@@ -148,10 +148,10 @@ function askConfirm(chatId) {
     `💰 Turi: ${d.type}`,
     `🔢 Miqdor: ${d.amount}`,
     `🏦 Hisob: ${d.account}`,
-    `📂 Kategoriya: ${d.category}`,
-    `🏷 Sub-kategoriya: ${d.subcategory}`,
-    `🤝 Qarz: ${d.debt}`,
-    `📊 50/30/20: ${d.plan}`,
+    `📂 Kategoriya: ${d.category || '-'}`,
+    `🏷 Sub-kategoriya: ${d.subcategory || '-'}`,
+    `🤝 Qarz: ${d.debt || '-'}`,
+    `📊 50/30/20: ${d.plan || '-'}`,
     `📝 Izoh: ${d.comment || '-'}`,
     '🔢 Raqam: avtomatik (formula orqali hisoblanadi)'
   ].join('\n');
@@ -372,8 +372,8 @@ bot.on('callback_query', async (query) => {
   // CATEGORY
   if (session.step === 'CATEGORY' && data.startsWith('cat_')) {
     if (data === 'cat_none') {
-      session.data.category = '-';
-      session.data.subcategory = '-';
+      session.data.category = '';
+      session.data.subcategory = '';
       session.step = 'DEBT';
       return askDebt(chatId);
     }
@@ -386,7 +386,7 @@ bot.on('callback_query', async (query) => {
   // SUBCATEGORY
   if (session.step === 'SUBCATEGORY' && data.startsWith('sub_')) {
     if (data === 'sub_none') {
-      session.data.subcategory = '-';
+      session.data.subcategory = '';
     } else {
       const idx = Number(data.split('_')[1]);
       const list = SUBCATEGORY_MAP[session.data.category] || [];
@@ -399,7 +399,7 @@ bot.on('callback_query', async (query) => {
   // DEBT
   if (session.step === 'DEBT' && data.startsWith('debt_')) {
     if (data === 'debt_none') {
-      session.data.debt = '-';
+      session.data.debt = '';
     } else {
       const idx = Number(data.split('_')[1]);
       session.data.debt = DEBTS[idx];
@@ -411,7 +411,7 @@ bot.on('callback_query', async (query) => {
   // PLAN (50/30/20)
   if (session.step === 'PLAN' && data.startsWith('plan_')) {
     if (data === 'plan_none') {
-      session.data.plan = '-';
+      session.data.plan = '';
     } else {
       const idx = Number(data.split('_')[1]);
       session.data.plan = PLAN_502030[idx];
