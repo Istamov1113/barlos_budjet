@@ -8,10 +8,31 @@ to'g'ridan-to'g'ri jadvalga yozadi.
 
 ## Fayllar
 
-- `index.js` — botning asosiy logikasi (savol-javob ketma-ketligi)
+- `index.js` — botning asosiy logikasi (savol-javob ketma-ketligi + Dashboard komandalari)
 - `categories.js` — barcha dropdown ro'yxatlari (Hisob, Kategoriya, Sub-kategoriya va h.k.)
-- `sheets.js` — Google Sheets bilan bog'lanish
+- `sheets.js` — Google Sheets'ga yozish (yangi tranzaksiya)
+- `dashboard.js` — Google Sheets'dan o'qish (Dashboard varag'idagi balans, hisoblar va h.k.)
 - `.env.example` — qanday sozlamalar kerakligi namunasi
+
+## Buyruqlar (komandalar)
+
+Telegram'ning "/" tugmasi ostida barcha buyruqlar avtomatik ko'rinadi:
+
+| Buyruq | Nima qiladi |
+|---|---|
+| `/yangi` | Yangi tranzaksiya kiritish |
+| `/cancel` | Joriy jarayonni bekor qilish |
+| `/balans` | Umumiy balans va oylik o'zgarish |
+| `/hisoblar` | Har bir hisobning joriy qoldig'i |
+| `/aktivlar` | Har bir hisobdagi aktiv (aksiya) tafsiloti — narx, PNL, ratio |
+| `/qarzlar` | Qarz daftari |
+| `/budjet` | 50/30/20 taqsimoti |
+
+`/balans`, `/hisoblar`, `/aktivlar`, `/qarzlar`, `/budjet` — bularning barchasi **faqat o'qiydi**,
+Dashboard varag'iga hech narsa yozmaydi. Har safar so'ralganda jonli (real-time) qiymat olinadi.
+
+Agar Dashboard varag'ining nomi "Dashboard" dan farq qilsa, Railway Variables'ga
+`DASHBOARD_SHEET_NAME` qo'shing (masalan `Dashboard_2`).
 
 Ustunlar tartibi (A:K, jami 11 ta): Sana, Kirim/chiqim, Miqdor, Hisob, Kategoriya,
 Sub-kategoriya, Qarz, 50/30/20, Obuna, Izoh, Raqam — bu sizning eski kodingizdagi
@@ -110,6 +131,7 @@ git push -u origin main
    | `GOOGLE_CLIENT_EMAIL` | JSON fayldagi `client_email` |
    | `GOOGLE_PRIVATE_KEY` | JSON fayldagi `private_key` (butunligicha) |
    | `ALLOWED_USER_ID` | (ixtiyoriy) sizning Telegram ID raqamingiz |
+   | `DASHBOARD_SHEET_NAME` | (ixtiyoriy, default `Dashboard`) balans o'qiladigan varaq nomi |
 
    `GOOGLE_PRIVATE_KEY` ni kiritishda qatorlar ko'chishi (`\n`) haqida xavotir olmang —
    ikkala holat ham (asl ko'p qatorli matn yoki `\n` bilan yozilgan bitta qator) kod
