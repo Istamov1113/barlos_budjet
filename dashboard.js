@@ -15,6 +15,42 @@ function getAuth() {
   ]);
 }
 
+// Yozish uchun to'liq huquqli JWT (P11/R11 katakchalariga yozish uchun kerak)
+function getWriteAuth() {
+  const email = process.env.GOOGLE_CLIENT_EMAIL;
+  let key = process.env.GOOGLE_PRIVATE_KEY;
+
+  if (!email || !key) {
+    throw new Error('GOOGLE_CLIENT_EMAIL yoki GOOGLE_PRIVATE_KEY .env da topilmadi');
+  }
+
+  key = key.replace(/\\n/g, '\n');
+
+  return new google.auth.JWT(email, null, key, [
+    'https://www.googleapis.com/auth/spreadsheets'
+  ]);
+}
+
+// P11 (birja) va R11 (valyuta yorlig'i) katakchalariga yozadi.
+// Yozilgandan so'ng, sheetdagi massiv formula (O13) avtomatik qayta hisoblanadi.
+async function setPortfolioSelector(exchange, currency) {
+  const auth = getWriteAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+  const spreadsheetId = process.env.SPREADSHEET_ID;
+  const dashboardSheet = process.env.DASHBOARD_SHEET_NAME || 'Dashboard';
+
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      valueInputOption: 'USER_ENTERED',
+      data: [
+        { range: `${dashboardSheet}!P11`, values: [[exchange]] },
+        { range: `${dashboardSheet}!R11`, values: [[currency]] }
+      ]
+    }
+  });
+}
+
 // 'C' -> 2 (0-asosli ustun indeksi)
 function colIndex(letter) {
   return letter.charCodeAt(0) - 65;
@@ -44,4 +80,4 @@ async function getDashboardGrid() {
   return res.data.values || [];
 }
 
-module.exports = { getDashboardGrid, cell };
+module.exports = { getDashboardGrid, cell, setPortfolioSelector };
