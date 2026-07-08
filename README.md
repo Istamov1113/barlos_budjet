@@ -24,12 +24,15 @@ Telegram'ning "/" tugmasi ostida barcha buyruqlar avtomatik ko'rinadi:
 | `/cancel` | Joriy jarayonni bekor qilish |
 | `/balans` | Umumiy balans va oylik o'zgarish |
 | `/hisoblar` | Har bir hisobning joriy qoldig'i |
-| `/aktivlar` | Har bir hisobdagi aktiv (aksiya) tafsiloti — narx, PNL, ratio |
+| `/aktivlar` | Birja tanlaysiz (Multicard/Binance/Bitget/Uznex/Payeer) — bot P11/R11 katakchalariga yozadi, sheetdagi formula qayta hisoblab beradi, natija shu yerda ko'rsatiladi |
 | `/qarzlar` | Qarz daftari |
 | `/budjet` | 50/30/20 taqsimoti |
 
-`/balans`, `/hisoblar`, `/aktivlar`, `/qarzlar`, `/budjet` — bularning barchasi **faqat o'qiydi**,
-Dashboard varag'iga hech narsa yozmaydi. Har safar so'ralganda jonli (real-time) qiymat olinadi.
+`/balans`, `/hisoblar`, `/qarzlar`, `/budjet` — bularning barchasi **faqat o'qiydi**,
+Dashboard varag'iga hech narsa yozmaydi. `/aktivlar` esa birja tanlovingizni Dashboard'ning
+`P11` (birja) va `R11` (valyuta) katakchalariga yozadi — bu sizning sheetdagi formulani
+ishga tushirish uchun zarur, boshqa hech qanday katakchaga tegilmaydi. Har safar so'ralganda
+jonli (real-time) qiymat olinadi.
 
 Agar Dashboard varag'ining nomi "Dashboard" dan farq qilsa, Railway Variables'ga
 `DASHBOARD_SHEET_NAME` qo'shing (masalan `Dashboard_2`).
