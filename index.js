@@ -12,8 +12,10 @@ if (!TOKEN) {
   process.exit(1);
 }
 
-const bot = new TelegramBot(TOKEN, { polling: true });
-console.log('Bot ishga tushdi...');
+// ⚠️ Avval bu yerda `{ polling: true }` edi. Polling Telegramdan doimiy "xabar bormi?" deb
+// so'rab turadi (chiquvchi trafik), shuning uchun Railway servisni hech qachon uxlatmasdi va
+// bepul limit tez tugardi. Endi polling YO'Q: xabarlar webhook orqali (faylning oxirida) keladi.
+const bot = new TelegramBot(TOKEN);
 
 // Telegram'ning "/" tugmasi ostidagi rasmiy komandalar menyusi
 bot.setMyCommands([
@@ -488,4 +490,83 @@ bot.on('callback_query', async (query) => {
   }
 });
 
-bot.on('polling_error', (err) => console.error('Polling xatosi:', err.message));
+// ---------- Webhook server (Railway Serverless bilan ishlaydi) ----------
+// Telegram xabar yuborganda Railway servisni uyg'otadi, 10 daqiqa jim bo'lsa servis uxlaydi.
+// ⚠️ Bu yerga setInterval / keep-alive / ping QO'SHMANG — ular servisning uxlashiga to'sqinlik qiladi.
+
+const http = require('http');
+const crypto = require('crypto');
+
+const PORT = Number(process.env.PORT || 3000);
+const WEBHOOK_PATH = '/webhook';
+// Telegram har so'rovda shu maxfiy tokenni yuboradi; boshqa hech kim webhookni chaqira olmaydi
+const WEBHOOK_SECRET =
+  process.env.WEBHOOK_SECRET || crypto.createHash('sha256').update(TOKEN).digest('hex').slice(0, 48);
+
+let lastUpdateId = 0; // Telegram bir xil xabarni qayta yuborsa, ikki marta ishlamasligi uchun
+
+const server = http.createServer((req, res) => {
+  if (req.method === 'POST' && req.url === WEBHOOK_PATH) {
+    if (req.headers['x-telegram-bot-api-secret-token'] !== WEBHOOK_SECRET) {
+      res.writeHead(401);
+      return res.end();
+    }
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+      if (body.length > 1e6) req.destroy();
+    });
+    req.on('end', () => {
+      res.writeHead(200); // Telegramga darrov javob beramiz (qayta yubormasligi uchun)
+      res.end();
+      try {
+        const update = JSON.parse(body);
+        if (update.update_id > lastUpdateId) {
+          lastUpdateId = update.update_id;
+          bot.processUpdate(update);
+        }
+      } catch (err) {
+        console.error('Webhook xatosi:', err.message);
+      }
+    });
+    return;
+  }
+  // Oddiy tekshiruv uchun
+  res.writeHead(req.url === '/' || req.url === '/health' ? 200 : 404);
+  res.end(req.url === '/' || req.url === '/health' ? 'ok' : '');
+});
+
+server.listen(PORT, async () => {
+  console.log(`Bot ishga tushdi (webhook rejimi), port: ${PORT}`);
+
+  // Railway "Generate Domain" qilingan bo'lsa RAILWAY_PUBLIC_DOMAIN avtomatik beriladi
+  const base =
+    process.env.PUBLIC_URL ||
+    (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null);
+
+  if (!base) {
+    console.error(
+      '❌ Public domen topilmadi! Railway: servis → Settings → Networking → "Generate Domain" ni bosing ' +
+        '(yoki PUBLIC_URL o‘zgaruvchisini kiriting).'
+    );
+    return;
+  }
+
+  try {
+    await bot.setWebHook(`${base}${WEBHOOK_PATH}`, {
+      secret_token: WEBHOOK_SECRET,
+      allowed_updates: JSON.stringify(['message', 'callback_query'])
+    });
+    const info = await bot.getWebHookInfo();
+    console.log(`✅ Webhook o‘rnatildi: ${info.url}`);
+    if (info.last_error_message) {
+      console.warn(`⚠️ Telegramning oxirgi webhook xatosi: ${info.last_error_message}`);
+    }
+  } catch (err) {
+    console.error('❌ Webhook o‘rnatilmadi:', err.message);
+  }
+});
+
+process.on('unhandledRejection', (err) => console.error('unhandledRejection:', err && err.message));
+// Railway servisni to'xtatganda toza yopiladi
+process.on('SIGTERM', () => server.close(() => process.exit(0)));
