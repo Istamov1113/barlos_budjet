@@ -2,7 +2,7 @@ require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const { appendRow } = require('./sheets');
 const { getDashboardGrid, cell, setPortfolioSelector } = require('./dashboard');
-const { ACCOUNTS, CATEGORIES, SUBCATEGORY_MAP, DEBTS, PLAN_502030 } = require('./categories');
+const { ACCOUNTS, CATEGORIES, SUBCATEGORY_MAP, DEBTS, PLAN_502030, FUNDS } = require('./categories');
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ALLOWED_USER_ID = process.env.ALLOWED_USER_ID; // ixtiyoriy: faqat shu ID ishlata oladi
@@ -146,6 +146,10 @@ function askPlan(chatId) {
   bot.sendMessage(chatId, '📊 50/30/20 bo‘yicha qaysi guruhga tegishli?', listKeyboard(PLAN_502030, 'plan', 2, true));
 }
 
+function askFund(chatId) {
+  bot.sendMessage(chatId, '💼 Qaysi fondga tegishli?', listKeyboard(FUNDS, 'fund', 2, true));
+}
+
 function askComment(chatId) {
   bot.sendMessage(chatId, '📝 Izoh yozing (yoki o‘tkazib yuboring):', {
     reply_markup: { inline_keyboard: [[{ text: '➖ O‘tkazib yuborish', callback_data: 'comment_skip' }]] }
@@ -165,6 +169,7 @@ function askConfirm(chatId) {
     `🏷 Sub-kategoriya: ${d.subcategory || '-'}`,
     `🤝 Qarz: ${d.debt || '-'}`,
     `📊 50/30/20: ${d.plan || '-'}`,
+    `💼 Fond: ${d.fund || '-'}`,
     `📝 Izoh: ${d.comment || '-'}`,
     '🔢 Raqam: avtomatik (formula orqali hisoblanadi)'
   ].join('\n');
@@ -460,7 +465,18 @@ bot.on('callback_query', async (query) => {
       const idx = Number(data.split('_')[1]);
       session.data.plan = PLAN_502030[idx];
     }
-    session.data.subscription = ''; // J9 - Obuna, hozircha bo'sh
+    session.step = 'FUND';
+    return askFund(chatId);
+  }
+
+  // FUND (J9 - Fond) -> Budjet tranzaksiya varag'ining I ustuniga yoziladi
+  if (session.step === 'FUND' && data.startsWith('fund_')) {
+    if (data === 'fund_none') {
+      session.data.fund = '';
+    } else {
+      const idx = Number(data.split('_')[1]);
+      session.data.fund = FUNDS[idx];
+    }
     session.step = 'COMMENT';
     return askComment(chatId);
   }
@@ -477,7 +493,7 @@ bot.on('callback_query', async (query) => {
     const d = session.data;
     const row = [
       d.date, d.type, d.amount, d.account, d.category,
-      d.subcategory, d.debt, d.plan, d.subscription, d.comment
+      d.subcategory, d.debt, d.plan, d.fund, d.comment
     ];
     try {
       await appendRow(row);
