@@ -60,4 +60,14 @@ const DEBTS = [
 // I9 - 50/30/20
 const PLAN_502030 = ['Xarajatlar', 'Istaklar', 'Jamg‘arma', 'Daromad'];
 
-module.exports = { ACCOUNTS, CATEGORIES, SUBCATEGORY_MAP, DEBTS, PLAN_502030 };
+// J9 - Fond (Budjet tranzaksiya varag'ining I ustuniga yoziladi).
+// Kirim ham, chiqim ham uchun bir xil ro'yxat.
+const FUNDS = [
+  'Xarajatlar fondi',
+  'Istaklar fondi',
+  'Jamg‘arma fondi',
+  'FVV',
+  'Ota-onamga fondi'
+];
+
+module.exports = { ACCOUNTS, CATEGORIES, SUBCATEGORY_MAP, DEBTS, PLAN_502030, FUNDS };
