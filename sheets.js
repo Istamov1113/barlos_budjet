@@ -63,7 +63,7 @@ function buildNumberFormula(row) {
 }
 
 // values - 10 ta elementli massiv: [Sana, Kirim/chiqim, Miqdor, Hisob,
-// Kategoriya, Sub-kategoriya, Qarz, 50/30/20, Obuna, Izoh]
+// Kategoriya, Sub-kategoriya, Qarz, 50/30/20, Fond (I ustun), Izoh]
 // K ustuni (raqam) formuladan avtomatik hisoblanadi.
 async function appendRow(values) {
   const auth = getAuth();
