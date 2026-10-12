@@ -24,7 +24,7 @@ const CATEGORIES = {
   Kirim: [
     '💵Maosh',
     '📊Omonat',
-    '💴 Divident',
+    '💴 Dividend',
     '🪙Keshbek',
     '🟢Boshqa kirim'
   ]
@@ -45,7 +45,7 @@ const SUBCATEGORY_MAP = {
   '🔻Boshqa chiqim': [],
   '💵Maosh': ['🧑‍⚖️F.T.Kadirov', '🧑‍⚖️L.Haydarov', '👩🏻‍⚖️D.S.Maqsudova', '💲Boshqa ish haqi'],
   '📊Omonat': ['🌳Siz uchun', '🌳Intellekt', '🌳Qulay online', '🌳Online-standart', '🌳Jamg‘armali'],
-  '💴 Divident': ['🟦 UzCSD'],
+  '💴 Dividend': ['🟦 UzCSD'],
   '🪙Keshbek': ['🟢Paynet', '💎Zoomrad', '💎Uzumbank'],
   '🟢Boshqa kirim': [ ]
 };
